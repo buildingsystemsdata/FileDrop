@@ -71,24 +71,26 @@ function getHelmetConfig() {
 
 /**
  * PIN protection middleware
- * @param {string} PIN - Valid PIN for comparison
+ * @param {string|Function} pinSource - Valid PIN or a getter that returns it
  */
-function requirePin(PIN) {
+function requirePin(pinSource) {
   return (req, res, next) => {
+    const pin = typeof pinSource === 'function' ? pinSource() : pinSource;
+
     // Skip PIN check if no PIN is configured
-    if (!PIN) {
+    if (!pin) {
       return next();
     }
 
     // Check cookie first
     const cookiePin = req.cookies?.DUMBDROP_PIN;
-    if (cookiePin && safeCompare(cookiePin, PIN)) {
+    if (cookiePin && safeCompare(cookiePin, pin)) {
       return next();
     }
 
     // Check header as fallback
     const headerPin = req.headers['x-pin'];
-    if (headerPin && safeCompare(headerPin, PIN)) {
+    if (headerPin && safeCompare(headerPin, pin)) {
       // Set cookie for subsequent requests with enhanced security
       const cookieOptions = {
         httpOnly: true, // Always enable HttpOnly

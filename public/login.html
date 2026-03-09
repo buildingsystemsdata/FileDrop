@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,7 +26,7 @@
         }
 
         .pin-header h2 {
-            font-weight: 500;
+            font-weight: 400;
             opacity: 0.9;
         }
 
@@ -55,8 +55,11 @@
         }
     </style>
 </head>
-<body>
+<body class="login-page">
     <div class="login-container">
+        <a class="brand-header brand-link" href="https://bsdata.ch" target="_blank" rel="noreferrer" aria-label="Go to bsdata.ch">
+            <img class="brand-logo" src="assets/bsdata_logo.png" alt="BSdata">
+        </a>
         <div class="pin-header">
             <h1>{{SITE_TITLE}}</h1>
             <h2>Enter PIN</h2>
@@ -68,11 +71,6 @@
     </div>
 
     <script>
-        // Initialize theme
-        const savedTheme = localStorage.getItem('theme') || 
-            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        document.documentElement.setAttribute('data-theme', savedTheme);
-
         let pinLength = 4;  // Default length, will be updated from server
 
         // Create PIN input boxes

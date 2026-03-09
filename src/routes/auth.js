@@ -36,12 +36,20 @@ router.post('/verify-pin', (req, res) => {
     }
 
     // Validate PIN format
-    const cleanedPin = validatePin(pin);
-    if (!cleanedPin) {
+    if (pin === '' || pin === undefined || pin === null) {
       logger.warn(`Invalid PIN format from IP: ${ip}`);
-      return res.status(401).json({ 
+      return res.status(400).json({
         success: false,
         error: 'Invalid PIN format. PIN must be 4-10 digits.' 
+      });
+    }
+
+    const cleanedPin = validatePin(pin);
+    if (!cleanedPin) {
+      logger.warn(`Failed PIN verification with malformed input from IP: ${ip}`);
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid PIN.'
       });
     }
 

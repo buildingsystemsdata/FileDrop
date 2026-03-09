@@ -73,6 +73,35 @@ docker compose up -d
 
 > **Note:** The `UPLOAD_DIR` environment variable is now explicitly set to `/app/uploads` in the container. The Dockerfile only creates the `uploads` directory, not `local_uploads`. The host directory `./uploads` is mounted to `/app/uploads` for persistent storage.
 
+### Cloudflare Tunnel
+
+The repo now includes an optional `cloudflared` service in `docker-compose.yml`. Put your tunnel token and public base URL in `.env`, then start the tunnel profile:
+
+```bash
+docker compose --profile tunnel up -d
+```
+
+Recommended values in `.env`:
+
+```env
+BASE_URL=https://upload.example.com/
+ALLOWED_ORIGINS=https://upload.example.com
+TRUST_PROXY=true
+CLOUDFLARE_TUNNEL_TOKEN=your-token
+```
+
+The app port is bound to `127.0.0.1` by default so Cloudflare Tunnel fronts external traffic while local access still works.
+
+### Multi-Arch Docker Hub Publish
+
+Use the included publish script after setting your Docker Hub values in `.env`:
+
+```bash
+npm run docker:publish
+```
+
+By default it publishes `linux/amd64` and `linux/arm64` using Buildx.
+
 ### Option 3: Running Locally (For Developers)
 
 For local development setup, troubleshooting, and advanced usage, see the dedicated guide:

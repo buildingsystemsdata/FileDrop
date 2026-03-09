@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{SITE_TITLE}} - Simple File Upload</title>
+    <title>{{SITE_TITLE}} - File Upload</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="toastify/toastify.css">
     <script src="toastify/toastify.js"></script>
@@ -12,23 +12,11 @@
 </head>
 <body>
     <div class="container">
-        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
-            <svg xmlns="http://www.w3.org/2000/svg" class="theme-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <!-- Moon icon (shown in light mode) -->
-                <path class="moon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                <!-- Sun icon (shown in dark mode) -->
-                <circle class="sun" cx="12" cy="12" r="5" style="display:none"/>
-                <line class="sun" x1="12" y1="1" x2="12" y2="3" style="display:none"/>
-                <line class="sun" x1="12" y1="21" x2="12" y2="23" style="display:none"/>
-                <line class="sun" x1="4.22" y1="4.22" x2="5.64" y2="5.64" style="display:none"/>
-                <line class="sun" x1="18.36" y1="18.36" x2="19.78" y2="19.78" style="display:none"/>
-                <line class="sun" x1="1" y1="12" x2="3" y2="12" style="display:none"/>
-                <line class="sun" x1="21" y1="12" x2="23" y2="12" style="display:none"/>
-                <line class="sun" x1="4.22" y1="19.78" x2="5.64" y2="18.36" style="display:none"/>
-                <line class="sun" x1="18.36" y1="5.64" x2="19.78" y2="4.22" style="display:none"/>
-            </svg>
-        </button>
+        <a class="brand-header brand-link" href="https://bsdata.ch" target="_blank" rel="noreferrer" aria-label="Go to bsdata.ch">
+            <img class="brand-logo" src="assets/bsdata_logo.png" alt="BSdata">
+        </a>
         <h1>{{SITE_TITLE}}</h1>
+        <p class="page-subtitle">Upload files and folders securely.</p>
         <div class="upload-container" id="dropZone">
             <div class="upload-content">
                 <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -40,14 +28,14 @@
                 <input type="file" id="fileInput" multiple hidden>
                 <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
                 <div class="button-group">
-                    <button onclick="document.getElementById('fileInput').click()">Browse Files</button>
-                    <button onclick="document.getElementById('folderInput').click()">Browse Folders</button>
+                    <button class="secondary-button" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+                    <button class="secondary-button" onclick="document.getElementById('folderInput').click()">Browse Folders</button>
                 </div>
             </div>
         </div>
         <div id="uploadProgress"></div>
         <div id="fileList" class="file-list"></div>
-        <button id="uploadButton" class="upload-button" style="display: none;">Upload Files</button>
+        <button id="uploadButton" class="upload-button accent-button" style="display: none;">Upload Files</button>
         
         <!-- File listing section (controlled by SHOW_FILE_LIST environment variable) -->
         <div id="uploadedFilesList" class="uploaded-files-section" style="display: none;">
@@ -62,6 +50,9 @@
             <div id="uploadedFilesContent" class="uploaded-files-content">
                 <div class="loading-message">Loading files...</div>
             </div>
+        </div>
+        <div class="page-footer">
+            <a class="footer-link" href="https://bsdata.ch" target="_blank" rel="noreferrer">return to bsdata.ch</a>
         </div>
     </div>
 
@@ -80,6 +71,8 @@
     <script defer>
         const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
         const RETRY_DELAY = 1000; // 1 second delay between retries
+        const BRAND_PRIMARY = '#223F7E';
+        const BRAND_ACCENT = '#F16365';
 
         // Read MAX_RETRIES from the injected server value, with a fallback
         const MAX_RETRIES_STR = '{{MAX_RETRIES}}';
@@ -907,18 +900,19 @@
         .folder-files {
             margin-left: 20px;
             border-left: 1px solid var(--border-color);
-            padding-left: 10px;
-            margin-top: 5px;
+            padding-left: 14px;
+            margin-top: 8px;
         }
         .file-item.nested {
             font-size: 0.9em;
-            margin-top: 3px;
+            margin-top: 6px;
         }
         .file-item.loading {
             text-align: center;
             padding: 15px;
-            background: var(--container-bg);
-            border-radius: 5px;
+            background: var(--surface-color);
+            border-radius: 16px;
+            border-left-color: var(--accent-color);
             margin: 10px 0;
             animation: pulse 1.5s infinite;
         }
@@ -931,17 +925,19 @@
         /* Uploaded files listing styles */
         .uploaded-files-section {
             margin-top: 30px;
-            padding: 20px;
-            background: var(--container-bg);
-            border-radius: 10px;
+            padding: 24px;
+            background: var(--surface-color);
+            border-radius: 24px;
             border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
         }
         .uploaded-files-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-            padding-bottom: 10px;
+            gap: 12px;
+            padding-bottom: 14px;
             border-bottom: 1px solid var(--border-color);
         }
         .uploaded-files-header h2 {
@@ -955,19 +951,21 @@
             gap: 10px;
             color: var(--text-color-secondary);
             font-size: 0.9em;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
         .refresh-btn {
-            padding: 5px 10px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            padding: 8px 14px;
+            background: #FFFFFF;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            border-radius: 999px;
+            box-shadow: none;
             font-size: 0.85em;
-            transition: background 0.3s;
         }
         .refresh-btn:hover {
-            background: var(--primary-hover);
+            background: rgba(34, 63, 126, 0.06);
+            color: var(--primary-hover);
         }
         .uploaded-files-content {
             max-height: 400px;
@@ -977,18 +975,17 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px;
-            margin: 5px 0;
-            background: var(--bg-color);
+            gap: 14px;
+            padding: 14px;
+            margin: 8px 0;
+            background: var(--surface-muted);
             border: 1px solid var(--border-color);
-            border-radius: 5px;
-            transition: background 0.3s;
+            border-radius: 18px;
+            transition: background 0.3s ease, transform 0.3s ease;
         }
         .uploaded-file-item:hover {
-            background: var(--hover-bg, rgba(0, 0, 0, 0.05));
-        }
-        [data-theme="dark"] .uploaded-file-item:hover {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--hover-bg);
+            transform: translateY(-1px);
         }
         .uploaded-file-info {
             display: flex;
@@ -997,9 +994,8 @@
             min-width: 0;
         }
         .uploaded-file-name {
-            font-weight: 500;
             color: var(--text-color);
-            margin-bottom: 2px;
+            margin-bottom: 4px;
             word-break: break-all;
         }
         .uploaded-file-details {
@@ -1012,43 +1008,43 @@
             margin-left: 10px;
         }
         .action-btn {
-            padding: 5px 8px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 999px;
             font-size: 0.8em;
-            transition: all 0.3s;
-            min-width: 60px;
+            min-width: 78px;
+            box-shadow: none;
         }
         .download-btn {
             background: var(--success-color);
             color: white;
         }
         .download-btn:hover {
-            background: var(--success-hover, #27ae60);
+            background: var(--success-hover);
         }
         .rename-btn {
-            background: var(--warning-color, #f39c12);
-            color: white;
+            background: #FFFFFF;
+            border: 1px solid var(--warning-color);
+            color: var(--warning-color);
         }
         .rename-btn:hover {
-            background: var(--warning-hover, #e67e22);
+            background: rgba(241, 99, 101, 0.08);
+            color: var(--warning-hover);
         }
         .delete-btn {
             background: var(--danger-color);
             color: white;
         }
         .delete-btn:hover {
-            background: var(--danger-hover, #c0392b);
+            background: var(--danger-hover);
         }
         .directory-item {
-            border-left: 3px solid var(--primary-color);
+            border-left: 4px solid var(--primary-color);
         }
         .directory-children {
             margin-left: 20px;
             border-left: 1px solid var(--border-color);
-            padding-left: 10px;
-            margin-top: 5px;
+            padding-left: 14px;
+            margin-top: 8px;
         }
         .loading-message, .error-message {
             text-align: center;
@@ -1073,7 +1069,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(34, 63, 126, 0.18);
             z-index: 1000;
             justify-content: center;
             align-items: center;
@@ -1082,14 +1078,15 @@
             display: flex;
         }
         .rename-modal-content {
-            background: var(--container-bg);
-            padding: 20px;
-            border-radius: 10px;
+            background: var(--surface-color);
+            padding: 24px;
+            border-radius: 24px;
             border: 1px solid var(--border-color);
             max-width: 500px;
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: var(--shadow-soft);
         }
         .rename-modal h3 {
             margin: 0 0 15px 0;
@@ -1097,10 +1094,10 @@
         }
         .rename-input {
             width: 100%;
-            padding: 10px;
+            padding: 12px 14px;
             border: 1px solid var(--border-color);
-            border-radius: 5px;
-            background: var(--bg-color);
+            border-radius: 14px;
+            background: #FFFFFF;
             color: var(--text-color);
             font-size: 14px;
             margin-bottom: 15px;
@@ -1108,6 +1105,7 @@
         .rename-input:focus {
             outline: none;
             border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(34, 63, 126, 0.12);
         }
         .rename-actions {
             display: flex;
@@ -1115,26 +1113,43 @@
             justify-content: flex-end;
         }
         .modal-btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            padding: 10px 18px;
+            border-radius: 999px;
             font-size: 14px;
-            transition: background 0.3s;
         }
         .modal-btn-cancel {
-            background: var(--secondary-color, #6c757d);
-            color: white;
+            background: #FFFFFF;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            box-shadow: none;
         }
         .modal-btn-cancel:hover {
-            background: var(--secondary-hover, #5a6268);
+            background: rgba(34, 63, 126, 0.06);
         }
         .modal-btn-confirm {
-            background: var(--primary-color);
+            background: var(--accent-color);
             color: white;
         }
         .modal-btn-confirm:hover {
-            background: var(--primary-hover);
+            background: var(--accent-hover);
+        }
+        @media (max-width: 640px) {
+            .uploaded-files-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .uploaded-files-stats {
+                justify-content: flex-start;
+            }
+            .uploaded-file-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .uploaded-file-actions {
+                width: 100%;
+                margin-left: 0;
+                flex-wrap: wrap;
+            }
         }
         `;
         document.head.appendChild(style);
@@ -1163,7 +1178,7 @@
                     gravity: "bottom",
                     position: "right",
                     style: {
-                        background: successful === total ? "#4CAF50" : "#f44336"
+                        background: successful === total ? BRAND_PRIMARY : BRAND_ACCENT
                     }
                 }).showToast();
 
@@ -1185,7 +1200,7 @@
                     gravity: "bottom",
                     position: "right",
                     style: {
-                        background: "#f44336"
+                        background: BRAND_ACCENT
                     }
                 }).showToast();
             } finally {
@@ -1381,7 +1396,7 @@
                         duration: 3000,
                         gravity: "bottom",
                         position: "right",
-                        style: { background: "#f44336" }
+                        style: { background: BRAND_ACCENT }
                     }).showToast();
                 }
             }
@@ -1413,7 +1428,7 @@
                         duration: 3000,
                         gravity: "bottom",
                         position: "right",
-                        style: { background: "#4CAF50" }
+                        style: { background: BRAND_PRIMARY }
                     }).showToast();
                     
                     // Reload the file list
@@ -1425,7 +1440,7 @@
                         duration: 3000,
                         gravity: "bottom",
                         position: "right",
-                        style: { background: "#f44336" }
+                        style: { background: BRAND_ACCENT }
                     }).showToast();
                 }
             }
@@ -1497,7 +1512,7 @@
                         duration: 3000,
                         gravity: "bottom",
                         position: "right",
-                        style: { background: "#4CAF50" }
+                        style: { background: BRAND_PRIMARY }
                     }).showToast();
                     
                     // Close modal and reload file list
@@ -1511,7 +1526,7 @@
                         duration: 3000,
                         gravity: "bottom",
                         position: "right",
-                        style: { background: "#f44336" }
+                        style: { background: BRAND_ACCENT }
                     }).showToast();
                 }
             }
@@ -1519,35 +1534,6 @@
         
         // Initialize file list manager
         const fileListManager = new FileListManager();
-
-        // Theme management
-        function setTheme(theme) {
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-            
-            // Update icon
-            const moonPaths = document.querySelectorAll('.moon');
-            const sunPaths = document.querySelectorAll('.sun');
-            
-            if (theme === 'dark') {
-                moonPaths.forEach(path => path.style.display = 'none');
-                sunPaths.forEach(path => path.style.display = '');
-            } else {
-                moonPaths.forEach(path => path.style.display = '');
-                sunPaths.forEach(path => path.style.display = 'none');
-            }
-        }
-
-        function toggleTheme() {
-            const current = document.documentElement.getAttribute('data-theme');
-            const next = current === 'dark' ? 'light' : 'dark';
-            setTheme(next);
-        }
-
-        // Initialize theme
-        const savedTheme = localStorage.getItem('theme') || 
-            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        setTheme(savedTheme);
     </script>
 </body>
 </html>

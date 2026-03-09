@@ -12,7 +12,7 @@ const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 
-const { config, validateConfig } = require('./config');
+const { config, refreshConfig, validateConfig } = require('./config');
 const logger = require('./utils/logger');
 const { ensureDirectoryExists } = require('./utils/fileUtils');
 const { getHelmetConfig, requirePin } = require('./middleware/security');
@@ -26,22 +26,22 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
-// Configure proxy trust based on environment (security-sensitive)
-if (config.trustProxy) {
-  if (config.trustedProxyIps && config.trustedProxyIps.length > 0) {
-    // Trust only specific proxy IPs
-    app.set('trust proxy', config.trustedProxyIps);
-    logger.warn(`Proxy trust enabled for specific IPs: ${config.trustedProxyIps.join(', ')}`);
+function configureProxyTrust() {
+  if (config.trustProxy) {
+    if (config.trustedProxyIps && config.trustedProxyIps.length > 0) {
+      app.set('trust proxy', config.trustedProxyIps);
+      logger.warn(`Proxy trust enabled for specific IPs: ${config.trustedProxyIps.join(', ')}`);
+    } else {
+      app.set('trust proxy', 1);
+      logger.warn('Proxy trust enabled for first proxy - ensure reverse proxy is properly configured');
+    }
   } else {
-    // Trust first proxy only
-    app.set('trust proxy', 1);
-    logger.warn('Proxy trust enabled for first proxy - ensure reverse proxy is properly configured');
+    app.set('trust proxy', false);
+    logger.info('Proxy trust disabled (secure default mode)');
   }
-} else {
-  // Secure default: do not trust proxy headers
-  app.set('trust proxy', false);
-  logger.info('Proxy trust disabled (secure default mode)');
 }
+
+configureProxyTrust();
 
 // Middleware setup
 app.use(cors(getCorsOptions(BASE_URL)));
@@ -90,8 +90,8 @@ const authRoutes = require('./routes/auth');
 app.use('/api/auth/pin-required', pinStatusLimiter);
 app.use('/api/auth/logout', pinStatusLimiter);
 app.use('/api/auth', pinVerifyLimiter, authRoutes);
-app.use('/api/upload', requirePin(config.pin), initUploadLimiter, uploadRouter);
-app.use('/api/files', requirePin(config.pin), downloadLimiter, fileRoutes);
+app.use('/api/upload', requirePin(() => config.pin), initUploadLimiter, uploadRouter);
+app.use('/api/files', requirePin(() => config.pin), downloadLimiter, fileRoutes);
 
 // Root route
 app.get('/', (req, res) => {
@@ -172,6 +172,9 @@ const METADATA_DIR = path.join(config.uploadDir, '.metadata');
  */
 async function initialize() {
   try {
+    refreshConfig();
+    configureProxyTrust();
+
     // Validate configuration
     validateConfig();
     

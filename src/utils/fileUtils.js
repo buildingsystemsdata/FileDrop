@@ -176,7 +176,7 @@ function sanitizeFilenameSafe(fileName) {
   // Step 2: Replace spaces and common separators with underscores
   baseName = baseName
     .replace(/\s+/g, '_') // Replace all whitespace with underscores
-    .replace(/[+\-\s]+/g, '_'); // Replace + and - with underscores
+    .replace(/[+\s]+/g, '_'); // Replace plus signs with underscores, keep safe hyphens intact
 
   // Step 3: Remove or replace problematic characters
   baseName = baseName
@@ -276,11 +276,11 @@ function sanitizePathPreserveDirs(filePath) {
 /**
  * Validate batch ID format
  * @param {string} batchId - Batch ID to validate
- * @returns {boolean} True if valid (matches timestamp-9_alphanumeric format)
+ * @returns {boolean} True if valid
  */
 function isValidBatchId(batchId) {
   if (!batchId) return false;
-  return /^\d+-[a-z0-9]{9}$/.test(batchId);
+  return /^[A-Za-z0-9._:-]{1,128}$/.test(batchId);
 }
 
 /**
@@ -320,11 +320,30 @@ function isPathWithinUploadDir(filePath, uploadDir, requireExists = false) {
         return false;
       }
     } else {
-      // For non-existing files (like during upload), use path.resolve
-      // This normalizes the path without requiring it to exist
-      resolvedFilePath = path.resolve(filePath);
-      
-      // Normalize both paths to use consistent separators
+      const absoluteFilePath = path.resolve(filePath);
+      let existingParent = absoluteFilePath;
+
+      while (!fs.existsSync(existingParent)) {
+        const parentDir = path.dirname(existingParent);
+        if (parentDir === existingParent) {
+          break;
+        }
+        existingParent = parentDir;
+      }
+
+      if (fs.existsSync(existingParent)) {
+        try {
+          const realExistingParent = fs.realpathSync(existingParent);
+          const relativeSuffix = path.relative(existingParent, absoluteFilePath);
+          resolvedFilePath = relativeSuffix ? path.join(realExistingParent, relativeSuffix) : realExistingParent;
+        } catch (err) {
+          logger.error(`Failed to resolve parent path for validation: ${filePath}`);
+          return false;
+        }
+      } else {
+        resolvedFilePath = absoluteFilePath;
+      }
+
       resolvedFilePath = path.normalize(resolvedFilePath);
     }
     
