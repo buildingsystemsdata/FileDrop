@@ -393,6 +393,17 @@ describe('Security Tests', () => {
       assert.strictEqual(validateProxyChain('::ffff:127.0.0.1', trustedIps), true);
     });
 
+    it('should validate CIDR proxy ranges', () => {
+      const { validateProxyChain } = require('../src/utils/ipExtractor');
+
+      const trustedIps = ['173.245.48.0/20', '2400:cb00::/32'];
+
+      assert.strictEqual(validateProxyChain('173.245.48.5', trustedIps), true);
+      assert.strictEqual(validateProxyChain('173.245.63.250', trustedIps), true);
+      assert.strictEqual(validateProxyChain('173.245.64.1', trustedIps), false);
+      assert.strictEqual(validateProxyChain('2400:cb00::1234', trustedIps), true);
+    });
+
     it('should prevent rate limit bypass via header spoofing', async () => {
       // This test verifies the fix for the reported vulnerability
       // Make 6 requests with different X-Forwarded-For headers but same real IP
@@ -439,4 +450,3 @@ describe('Security Tests', () => {
     });
   });
 });
-

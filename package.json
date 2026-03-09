@@ -5,11 +5,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "docker:publish": "sh ./scripts/docker-publish.sh",
+    "docker:publish": "bash ./scripts/docker-publish.sh",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "test": "node --test test/**/*.test.js",
+    "test": "DUMBDROP_PIN= TRUST_PROXY=false NOTIFICATION_WEBHOOK_URL= APPRISE_URL= NODE_ENV=test node --test test/**/*.test.js",
     "predev": "node -e \"const v=process.versions.node.split('.');if(v[0]<20) {console.error('Node.js >=20.0.0 required');process.exit(1)}\""
   },
   "keywords": [],

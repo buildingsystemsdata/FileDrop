@@ -6,6 +6,7 @@
 
 const { config } = require('../config');
 const logger = require('./logger');
+const { normalizeIp, buildIpBlockList, isIpAllowed } = require('./ipAllowlist');
 
 /**
  * Safely extract the real client IP address from a request.
@@ -64,31 +65,8 @@ function validateProxyChain(proxyIp, trustedIps) {
     return false;
   }
 
-  const normalizedProxyIp = normalizeIp(proxyIp);
-
-  // Check if proxy IP is in the trusted list
-  return trustedIps.some(trustedIp => {
-    const normalizedTrustedIp = normalizeIp(trustedIp);
-    return normalizedProxyIp === normalizedTrustedIp;
-  });
-}
-
-/**
- * Normalize IP address format.
- * Handles IPv6-mapped IPv4 addresses (::ffff:192.168.1.1 -> 192.168.1.1)
- * 
- * @param {string} ip - IP address to normalize
- * @returns {string} Normalized IP address
- */
-function normalizeIp(ip) {
-  if (!ip) return 'unknown';
-  
-  // Convert IPv6-mapped IPv4 to standard IPv4
-  if (ip.startsWith('::ffff:')) {
-    return ip.substring(7);
-  }
-  
-  return ip;
+  const blockList = Array.isArray(trustedIps) ? buildIpBlockList(trustedIps) : trustedIps;
+  return isIpAllowed(proxyIp, blockList);
 }
 
 module.exports = {
@@ -96,4 +74,3 @@ module.exports = {
   validateProxyChain,
   normalizeIp
 };
-

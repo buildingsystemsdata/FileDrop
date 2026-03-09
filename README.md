@@ -91,6 +91,7 @@ CLOUDFLARE_TUNNEL_TOKEN=your-token
 ```
 
 The app port is bound to `127.0.0.1` by default so Cloudflare Tunnel fronts external traffic while local access still works.
+Do not enable source-IP allowlisting against Cloudflare's public CIDR ranges when using `cloudflared`, because your app will only see the local tunnel container or Docker bridge IP.
 
 ### Multi-Arch Docker Hub Publish
 
@@ -136,6 +137,8 @@ For local development setup, troubleshooting, and advanced usage, see the dedica
 | DUMBDROP_PIN                                             | PIN protection (4-10 digits)                                                                                                          | None                                                          | No       |
 | DUMBDROP_TITLE                                           | Site title displayed in header                                                                                                        | DumbDrop                                                      | No       |
 | APPRISE_URL                                              | Apprise URL for notifications                                                                                                         | None                                                          | No       |
+| NOTIFICATION_WEBHOOK_URL                                 | Direct HTTP POST webhook for upload notifications                                                                                     | None                                                          | No       |
+| NOTIFICATION_WEBHOOK_BEARER_TOKEN                        | Optional bearer token for `NOTIFICATION_WEBHOOK_URL`                                                                                  | None                                                          | No       |
 | APPRISE_MESSAGE                                          | Notification message template                                                                                                         | New file uploaded {filename} ({size}), Storage used {storage} | No       |
 | APPRISE_SIZE_UNIT                                        | Size unit for notifications (B, KB, MB, GB, TB, or Auto)                                                                              | Auto                                                          | No       |
 | AUTO_UPLOAD                                              | Enable automatic upload on file selection                                                                                             | false                                                         | No       |
@@ -146,7 +149,11 @@ For local development setup, troubleshooting, and advanced usage, see the dedica
 | UPLOAD_DIR                                               | Directory for uploads (Docker/production; should be `/app/uploads` in container)                                                      | None (see LOCAL_UPLOAD_DIR fallback)                          | No       |
 | LOCAL_UPLOAD_DIR                                         | Directory for uploads (local dev, fallback: './local_uploads')                                                                        | ./local_uploads                                               | No       |
 | TRUST_PROXY                                              | Trust proxy headers (X-Forwarded-For) - only enable if behind a reverse proxy                                                         | false                                                         | No       |
-| TRUSTED_PROXY_IPS                                        | Comma-separated list of trusted proxy IPs (optional, requires TRUST_PROXY=true)                                                       | None                                                          | No       |
+| TRUSTED_PROXY_IPS                                        | Comma-separated list of trusted proxy IPs or CIDRs (optional, requires TRUST_PROXY=true)                                              | None                                                          | No       |
+| TRUSTED_PROXY_IP_FILES                                   | Comma-separated list of files containing trusted proxy IPs or CIDRs                                                                   | None                                                          | No       |
+| RESTRICT_TO_ALLOWED_SOURCE_IPS                           | Reject requests unless the socket source IP matches the configured allowlist                                                           | false                                                         | No       |
+| ALLOWED_SOURCE_IPS                                       | Comma-separated list of allowed source IPs or CIDRs for origin access restriction                                                     | None                                                          | No       |
+| ALLOWED_SOURCE_IP_FILES                                  | Comma-separated list of files containing allowed source IPs or CIDRs                                                                  | None                                                          | No       |
 
 - **UPLOAD_DIR** is used in Docker/production. If not set, LOCAL_UPLOAD_DIR is used for local development. If neither is set, the default is `./local_uploads`.
 - **Docker Note:** The Dockerfile now only creates the `uploads` directory inside the container. The host's `./local_uploads` is mounted to `/app/uploads` and should be managed on the host system.
@@ -182,11 +189,18 @@ TRUST_PROXY=true
 
 ### Advanced Configuration (Recommended)
 
-For additional security, specify the exact IP addresses of your trusted proxies:
+For additional security, specify the exact IP addresses or CIDR ranges of your trusted proxies:
 
 ```env
 TRUST_PROXY=true
 TRUSTED_PROXY_IPS=172.17.0.1,10.0.0.1
+```
+
+You can also load the list from files:
+
+```env
+TRUST_PROXY=true
+TRUSTED_PROXY_IP_FILES=./ip4list.txt,./ip6list.txt
 ```
 
 **Common proxy IPs:**
@@ -215,7 +229,10 @@ TRUSTED_PROXY_IPS=172.17.0.1
 **Cloudflare:**
 ```env
 TRUST_PROXY=true
-# List Cloudflare IPs or use their published IP ranges
+# Direct Cloudflare proxy mode only, not cloudflared tunnel
+TRUSTED_PROXY_IP_FILES=./ip4list.txt,./ip6list.txt
+RESTRICT_TO_ALLOWED_SOURCE_IPS=true
+ALLOWED_SOURCE_IP_FILES=./ip4list.txt,./ip6list.txt
 ```
 
 **Direct Access (No Proxy):**
@@ -321,9 +338,19 @@ Both {size} and {storage} use the same formatting rules based on APPRISE_SIZE_UN
 #### Notification Support
 
 - Integration with [Apprise](https://github.com/caronc/apprise?tab=readme-ov-file#supported-notifications) for flexible notifications
+- Optional direct JSON webhook via `NOTIFICATION_WEBHOOK_URL` for services like Power Automate
+- Optional bearer auth via `NOTIFICATION_WEBHOOK_BEARER_TOKEN`
 - Support for all Apprise notification services
 - Customizable notification messages with filename templating
-- Optional - disabled if no APPRISE_URL is set
+- Optional - disabled if neither `APPRISE_URL` nor `NOTIFICATION_WEBHOOK_URL` is set
+
+When `NOTIFICATION_WEBHOOK_URL` is configured, the app sends a JSON `POST` body containing:
+
+- `filename`
+- `fileSize`
+- `formattedSize`
+- `totalStorage`
+- `message`
 </details>
 
 ## Security

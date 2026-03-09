@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { validatePin } = require('../utils/security');
 const logger = require('../utils/logger');
+const { resolveIpEntries, buildIpBlockList } = require('../utils/ipAllowlist');
 
 const DEFAULT_SITE_TITLE = 'File Upload';
 const DEFAULT_CLIENT_MAX_RETRIES = 5;
@@ -21,7 +22,10 @@ const logAndReturn = (key, value, isDefault = false) => {
 function determineUploadDirectory() {
   let uploadDir;
 
-  if (process.env.UPLOAD_DIR) {
+  if (process.env.NODE_ENV === 'test' && process.env.LOCAL_UPLOAD_DIR) {
+    uploadDir = process.env.LOCAL_UPLOAD_DIR;
+    logConfig(`Upload directory using LOCAL_UPLOAD_DIR for test environment: ${uploadDir}`);
+  } else if (process.env.UPLOAD_DIR) {
     uploadDir = process.env.UPLOAD_DIR;
     logConfig(`Upload directory set from UPLOAD_DIR: ${uploadDir}`);
   } else if (process.env.LOCAL_UPLOAD_DIR) {
@@ -59,6 +63,25 @@ function resolvePinFromEnv() {
   return validatePin(process.env.DUMBDROP_PIN || process.env.PIN);
 }
 
+function buildIpAccessConfig() {
+  const trustedProxyIps = resolveIpEntries({
+    inlineEntries: process.env.TRUSTED_PROXY_IPS,
+    fileEntries: process.env.TRUSTED_PROXY_IP_FILES,
+  });
+  const allowedSourceIps = resolveIpEntries({
+    inlineEntries: process.env.ALLOWED_SOURCE_IPS,
+    fileEntries: process.env.ALLOWED_SOURCE_IP_FILES,
+  });
+
+  return {
+    trustedProxyIps: trustedProxyIps.length > 0 ? trustedProxyIps : null,
+    trustedProxyBlockList: buildIpBlockList(trustedProxyIps),
+    restrictToAllowedSourceIps: process.env.RESTRICT_TO_ALLOWED_SOURCE_IPS === 'true',
+    allowedSourceIps: allowedSourceIps.length > 0 ? allowedSourceIps : null,
+    allowedSourceBlockList: buildIpBlockList(allowedSourceIps),
+  };
+}
+
 function buildConfig() {
   const port = process.env.PORT || 3000;
   const nodeEnv = process.env.NODE_ENV || 'production';
@@ -93,6 +116,8 @@ function buildConfig() {
     return logAndReturn('CLIENT_MAX_RETRIES', retries);
   })();
 
+  const ipAccessConfig = buildIpAccessConfig();
+
   return {
     port,
     nodeEnv,
@@ -103,13 +128,17 @@ function buildConfig() {
     showFileList: process.env.SHOW_FILE_LIST === 'true',
     pin: resolvePinFromEnv(),
     trustProxy: process.env.TRUST_PROXY === 'true',
-    trustedProxyIps: process.env.TRUSTED_PROXY_IPS
-      ? process.env.TRUSTED_PROXY_IPS.split(',').map(ip => ip.trim())
-      : null,
+    trustedProxyIps: ipAccessConfig.trustedProxyIps,
+    trustedProxyBlockList: ipAccessConfig.trustedProxyBlockList,
+    restrictToAllowedSourceIps: ipAccessConfig.restrictToAllowedSourceIps,
+    allowedSourceIps: ipAccessConfig.allowedSourceIps,
+    allowedSourceBlockList: ipAccessConfig.allowedSourceBlockList,
     siteTitle: process.env.DUMBDROP_TITLE || DEFAULT_SITE_TITLE,
     appriseUrl: process.env.APPRISE_URL,
     appriseMessage: process.env.APPRISE_MESSAGE || 'New file uploaded - {filename} ({size}), Storage used {storage}',
     appriseSizeUnit: process.env.APPRISE_SIZE_UNIT,
+    notificationWebhookUrl: process.env.NOTIFICATION_WEBHOOK_URL,
+    notificationWebhookBearerToken: process.env.NOTIFICATION_WEBHOOK_BEARER_TOKEN,
     allowedExtensions: process.env.ALLOWED_EXTENSIONS
       ? process.env.ALLOWED_EXTENSIONS.split(',').map(ext => ext.trim().toLowerCase())
       : null,
@@ -153,7 +182,7 @@ function validateConfig() {
     errors.push(errorMsg);
   }
 
-  if (config.nodeEnv === 'production' && !config.appriseUrl) {
+  if (config.nodeEnv === 'production' && !config.appriseUrl && !config.notificationWebhookUrl) {
     logger.info('Notifications disabled - No Configuration');
   }
 

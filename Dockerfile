@@ -38,6 +38,7 @@ RUN mkdir -p uploads
 # Copy source with specific paths to avoid unnecessary files
 COPY src/ ./src/
 COPY public/ ./public/
+COPY ip4list.txt ip6list.txt ./
 COPY __tests__/ ./__tests__/
 COPY dev/ ./dev/
 COPY .eslintrc.json .eslintignore ./
@@ -57,6 +58,7 @@ RUN mkdir -p uploads
 # Copy only necessary source files
 COPY src/ ./src/
 COPY public/ ./public/
+COPY ip4list.txt ip6list.txt ./
 
 # Expose port
 EXPOSE 3000

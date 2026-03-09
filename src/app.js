@@ -16,10 +16,12 @@ const { config, refreshConfig, validateConfig } = require('./config');
 const logger = require('./utils/logger');
 const { ensureDirectoryExists } = require('./utils/fileUtils');
 const { getHelmetConfig, requirePin } = require('./middleware/security');
+const { restrictSourceIps } = require('./middleware/networkAccess');
 const { safeCompare } = require('./utils/security');
 const { initUploadLimiter, pinVerifyLimiter, pinStatusLimiter, downloadLimiter } = require('./middleware/rateLimiter');
 const { injectDemoBanner, demoMiddleware } = require('./utils/demoMode');
 const { originValidationMiddleware, getCorsOptions } = require('./middleware/cors');
+const { isIpAllowed } = require('./utils/ipAllowlist');
 
 // Create Express app
 const app = express();
@@ -28,9 +30,9 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
 function configureProxyTrust() {
   if (config.trustProxy) {
-    if (config.trustedProxyIps && config.trustedProxyIps.length > 0) {
-      app.set('trust proxy', config.trustedProxyIps);
-      logger.warn(`Proxy trust enabled for specific IPs: ${config.trustedProxyIps.join(', ')}`);
+    if (config.trustedProxyBlockList) {
+      app.set('trust proxy', ip => isIpAllowed(ip, config.trustedProxyBlockList));
+      logger.warn(`Proxy trust enabled for ${config.trustedProxyIps.length} configured IP/CIDR entries`);
     } else {
       app.set('trust proxy', 1);
       logger.warn('Proxy trust enabled for first proxy - ensure reverse proxy is properly configured');
@@ -44,6 +46,7 @@ function configureProxyTrust() {
 configureProxyTrust();
 
 // Middleware setup
+app.use(restrictSourceIps);
 app.use(cors(getCorsOptions(BASE_URL)));
 app.use(cookieParser());
 app.use(express.json());
