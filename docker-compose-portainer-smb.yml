@@ -4,7 +4,7 @@ services:
         container_name: dumbdrop
         restart: unless-stopped
         volumes:
-            - filedrop_uploads:/app/uploads
+            - ${LOCAL_UPLOAD_DIR}:/app/uploads
         environment:
             UPLOAD_DIR: /app/uploads
             NODE_ENV: ${NODE_ENV:-production}
@@ -31,11 +31,3 @@ services:
         depends_on:
             - dumbdrop
         command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-
-volumes:
-    filedrop_uploads:
-        driver: local
-        driver_opts:
-            type: cifs
-            device: //${SMB_HOST}/${SMB_SHARE}
-            o: username=${SMB_USERNAME},password=${SMB_PASSWORD},addr=${SMB_HOST},vers=${SMB_VERS:-3.0},file_mode=${SMB_FILE_MODE:-0660},dir_mode=${SMB_DIR_MODE:-0770},uid=${SMB_UID:-0},gid=${SMB_GID:-0},iocharset=utf8,noperm
