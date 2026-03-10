@@ -13,7 +13,7 @@ const fsSync = require('fs'); // For sync checks like existsSync
 const { config } = require('../config');
 const logger = require('../utils/logger');
 const { getUniqueFolderPath, sanitizePathPreserveDirsSafe, isValidBatchId, isPathWithinUploadDir } = require('../utils/fileUtils');
-const { sendNotification } = require('../services/notifications');
+const { sendNotification, buildStoredPath } = require('../services/notifications');
 const { isDemoMode } = require('../utils/demoMode');
 
 // --- Persistence Setup ---
@@ -138,7 +138,14 @@ router.post('/init', async (req, res) => {
     // Simulate zero-byte completion for demo
     if (Number(fileSize) === 0) {
       logger.success(`[DEMO] Completed zero-byte file upload: ${sanitizedDemoFilename}`);
-      sendNotification(sanitizedDemoFilename, 0, config); // Still send notification if configured
+      sendNotification({
+        uploadId,
+        batchId: uploadId,
+        filename: sanitizedDemoFilename,
+        fileSize: 0,
+        storedPath: sanitizedDemoFilename,
+        completedAt: Date.now(),
+      }, config);
     }
     return res.json({ uploadId });
   }
@@ -285,7 +292,14 @@ router.post('/init', async (req, res) => {
         await fs.writeFile(finalFilePath, ''); // Create the empty file
         logger.success(`Completed zero-byte file upload: ${metadata.originalFilename} as ${finalFilePath}`);
         await deleteUploadMetadata(uploadId); // Clean up metadata since it's done
-        sendNotification(metadata.originalFilename, 0, config);
+        sendNotification({
+          uploadId: metadata.uploadId,
+          batchId: metadata.batchId,
+          filename: metadata.originalFilename,
+          fileSize: 0,
+          storedPath: buildStoredPath(config.uploadDir, finalFilePath),
+          completedAt: Date.now(),
+        }, config);
       } catch (writeErr) {
         logger.error(`Failed to create zero-byte file ${finalFilePath}: ${writeErr.message}`);
         await deleteUploadMetadata(uploadId).catch(() => {}); // Attempt cleanup on error
@@ -420,7 +434,14 @@ router.post('/chunk/:uploadId', express.raw({
         await fs.rename(metadata.partialFilePath, metadata.filePath);
         logger.success(`Upload completed and finalized: ${metadata.originalFilename} as ${metadata.filePath} (${metadata.fileSize} bytes)`);
         await deleteUploadMetadata(uploadId); // Clean up metadata file AFTER successful rename
-        sendNotification(metadata.originalFilename, metadata.fileSize, config);
+        sendNotification({
+          uploadId: metadata.uploadId,
+          batchId: metadata.batchId,
+          filename: metadata.originalFilename,
+          fileSize: metadata.fileSize,
+          storedPath: buildStoredPath(config.uploadDir, metadata.filePath),
+          completedAt: Date.now(),
+        }, config);
       } catch (renameErr) {
         if (renameErr.code === 'ENOENT') {
           logger.warn(`Partial file ${metadata.partialFilePath} not found during finalization for ${uploadId}. Assuming already finalized elsewhere.`);

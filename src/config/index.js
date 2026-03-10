@@ -116,6 +116,21 @@ function buildConfig() {
     return logAndReturn('CLIENT_MAX_RETRIES', retries);
   })();
 
+  const notificationBatchDelayMs = (() => {
+    const envValue = process.env.NOTIFICATION_BATCH_DELAY_MS;
+    if (envValue === undefined || envValue === '') {
+      return 2000;
+    }
+
+    const delay = parseInt(envValue, 10);
+    if (isNaN(delay) || delay < 0) {
+      logConfig(`Invalid NOTIFICATION_BATCH_DELAY_MS value: "${envValue}". Using default: 2000`, 'warning');
+      return 2000;
+    }
+
+    return delay;
+  })();
+
   const ipAccessConfig = buildIpAccessConfig();
 
   return {
@@ -139,6 +154,7 @@ function buildConfig() {
     appriseSizeUnit: process.env.APPRISE_SIZE_UNIT,
     notificationWebhookUrl: process.env.NOTIFICATION_WEBHOOK_URL,
     notificationWebhookBearerToken: process.env.NOTIFICATION_WEBHOOK_BEARER_TOKEN,
+    notificationBatchDelayMs,
     allowedExtensions: process.env.ALLOWED_EXTENSIONS
       ? process.env.ALLOWED_EXTENSIONS.split(',').map(ext => ext.trim().toLowerCase())
       : null,

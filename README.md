@@ -103,6 +103,34 @@ npm run docker:publish
 
 By default it publishes `linux/amd64` and `linux/arm64` using Buildx.
 
+### Portainer SMB Storage
+
+If you want uploads written directly to an SMB share from the Portainer host, use [`docker-compose-portainer-smb.yml`](/Users/ben/Documents/bsdata/FileDrop/docker-compose-portainer-smb.yml) instead of the default Portainer file.
+
+Set these environment variables in Portainer:
+
+```env
+SMB_HOST=192.168.30.30
+SMB_SHARE=uploads
+SMB_USERNAME=portainer
+SMB_PASSWORD=your-password
+SMB_VERS=3.0
+SMB_UID=0
+SMB_GID=0
+SMB_FILE_MODE=0660
+SMB_DIR_MODE=0770
+```
+
+This mounts `//SMB_HOST/SMB_SHARE` into the container at `/app/uploads` using Docker's local CIFS volume driver, so files are written directly to the share.
+
+Requirements:
+
+- The Portainer Docker host must be Linux
+- The Docker host must have CIFS/SMB support available, typically `cifs-utils`
+- The SMB share must be reachable from the Docker host
+
+Use the secret values in Portainer's environment editor rather than committing them to the repo.
+
 ### Option 3: Running Locally (For Developers)
 
 For local development setup, troubleshooting, and advanced usage, see the dedicated guide:
@@ -139,6 +167,7 @@ For local development setup, troubleshooting, and advanced usage, see the dedica
 | APPRISE_URL                                              | Apprise URL for notifications                                                                                                         | None                                                          | No       |
 | NOTIFICATION_WEBHOOK_URL                                 | Direct HTTP POST webhook for upload notifications                                                                                     | None                                                          | No       |
 | NOTIFICATION_WEBHOOK_BEARER_TOKEN                        | Optional bearer token for `NOTIFICATION_WEBHOOK_URL`                                                                                  | None                                                          | No       |
+| NOTIFICATION_BATCH_DELAY_MS                              | Debounce window before sending a batch notification so multi-file uploads arrive as one payload                                      | 2000                                                          | No       |
 | APPRISE_MESSAGE                                          | Notification message template                                                                                                         | New file uploaded {filename} ({size}), Storage used {storage} | No       |
 | APPRISE_SIZE_UNIT                                        | Size unit for notifications (B, KB, MB, GB, TB, or Auto)                                                                              | Auto                                                          | No       |
 | AUTO_UPLOAD                                              | Enable automatic upload on file selection                                                                                             | false                                                         | No       |
@@ -344,13 +373,32 @@ Both {size} and {storage} use the same formatting rules based on APPRISE_SIZE_UN
 - Customizable notification messages with filename templating
 - Optional - disabled if neither `APPRISE_URL` nor `NOTIFICATION_WEBHOOK_URL` is set
 
-When `NOTIFICATION_WEBHOOK_URL` is configured, the app sends a JSON `POST` body containing:
+When `NOTIFICATION_WEBHOOK_URL` is configured, the app groups files by upload batch and sends a JSON `POST` body containing:
 
+- `event`
+- `siteTitle`
+- `baseUrl`
+- `batchId`
+- `fileCount`
+- `batchTotalSize`
+- `formattedBatchSize`
+- `totalStorage`
+- `startedAt`
+- `completedAt`
+- `latestFile`
+- `files`
+- `message`
+
+Each `files` entry contains:
+
+- `uploadId`
 - `filename`
+- `originalFilename`
+- `storedPath`
 - `fileSize`
 - `formattedSize`
-- `totalStorage`
-- `message`
+- `uploadedAt`
+- `isZeroByte`
 </details>
 
 ## Security

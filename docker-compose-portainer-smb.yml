@@ -3,18 +3,16 @@ services:
         image: ${DOCKER_IMAGE_REPO:-sawicki/file-upload}:${DOCKER_IMAGE_TAG:-latest}
         container_name: dumbdrop
         restart: unless-stopped
-        ports:
-            - ${HOST_BIND_IP:-127.0.0.1}:${HOST_PORT:-3000}:3000
         volumes:
-            - ${LOCAL_UPLOAD_DIR:-./local_uploads}:/app/uploads
+            - filedrop_uploads:/app/uploads
         environment:
             UPLOAD_DIR: /app/uploads
             NODE_ENV: ${NODE_ENV:-production}
-            BASE_URL: ${BASE_URL:-http://localhost:3000/}
+            BASE_URL: ${BASE_URL}
             ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
             DUMBDROP_TITLE: ${DUMBDROP_TITLE:-File Upload}
             MAX_FILE_SIZE: ${MAX_FILE_SIZE:-1024}
-            DUMBDROP_PIN: ${DUMBDROP_PIN:-}
+            DUMBDROP_PIN: ${DUMBDROP_PIN}
             AUTO_UPLOAD: ${AUTO_UPLOAD:-true}
             NOTIFICATION_WEBHOOK_URL: ${NOTIFICATION_WEBHOOK_URL:-}
             NOTIFICATION_WEBHOOK_BEARER_TOKEN: ${NOTIFICATION_WEBHOOK_BEARER_TOKEN:-}
@@ -30,8 +28,14 @@ services:
         image: cloudflare/cloudflared:latest
         container_name: filedrop-cloudflared
         restart: unless-stopped
-        profiles:
-            - tunnel
         depends_on:
             - dumbdrop
         command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+
+volumes:
+    filedrop_uploads:
+        driver: local
+        driver_opts:
+            type: cifs
+            device: //${SMB_HOST}/${SMB_SHARE}
+            o: username=${SMB_USERNAME},password=${SMB_PASSWORD},addr=${SMB_HOST},vers=${SMB_VERS:-3.0},file_mode=${SMB_FILE_MODE:-0660},dir_mode=${SMB_DIR_MODE:-0770},uid=${SMB_UID:-0},gid=${SMB_GID:-0},iocharset=utf8,noperm
