@@ -1,0 +1,33 @@
+services:
+    dumbdrop:
+        image: ${DOCKER_IMAGE_REPO:-sawicki/file-upload}:${DOCKER_IMAGE_TAG:-latest}
+        container_name: dumbdrop
+        restart: unless-stopped
+        volumes:
+            - ${LOCAL_UPLOAD_DIR}:/app/uploads
+        environment:
+            UPLOAD_DIR: /app/uploads
+            NODE_ENV: ${NODE_ENV:-production}
+            BASE_URL: ${BASE_URL}
+            ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+            DUMBDROP_TITLE: ${DUMBDROP_TITLE:-File Upload}
+            MAX_FILE_SIZE: ${MAX_FILE_SIZE:-1024}
+            DUMBDROP_PIN: ${DUMBDROP_PIN}
+            AUTO_UPLOAD: ${AUTO_UPLOAD:-true}
+            NOTIFICATION_WEBHOOK_URL: ${NOTIFICATION_WEBHOOK_URL:-}
+            NOTIFICATION_WEBHOOK_BEARER_TOKEN: ${NOTIFICATION_WEBHOOK_BEARER_TOKEN:-}
+            NOTIFICATION_BATCH_DELAY_MS: ${NOTIFICATION_BATCH_DELAY_MS:-2000}
+            TRUST_PROXY: ${TRUST_PROXY:-true}
+            TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-}
+            TRUSTED_PROXY_IP_FILES: ${TRUSTED_PROXY_IP_FILES:-}
+            RESTRICT_TO_ALLOWED_SOURCE_IPS: ${RESTRICT_TO_ALLOWED_SOURCE_IPS:-false}
+            ALLOWED_SOURCE_IPS: ${ALLOWED_SOURCE_IPS:-}
+            ALLOWED_SOURCE_IP_FILES: ${ALLOWED_SOURCE_IP_FILES:-}
+
+    cloudflared:
+        image: cloudflare/cloudflared:latest
+        container_name: filedrop-cloudflared
+        restart: unless-stopped
+        depends_on:
+            - dumbdrop
+        command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}

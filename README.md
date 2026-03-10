@@ -131,6 +131,18 @@ Requirements:
 
 Use the secret values in Portainer's environment editor rather than committing them to the repo.
 
+### Portainer Host Bind Storage
+
+If the Docker host cannot mount CIFS volumes itself, mount the SMB share on the host OS first and then use a bind mount via [`docker-compose-portainer-bind.yml`](/Users/ben/Documents/bsdata/FileDrop/docker-compose-portainer-bind.yml).
+
+Set:
+
+```env
+LOCAL_UPLOAD_DIR=/mnt/uploads
+```
+
+Then point the Portainer stack at the bind-based file. This is the recommended approach for restricted Docker hosts, rootless Docker, or containerized Docker hosts where `mount -t cifs` is not permitted.
+
 ### Option 3: Running Locally (For Developers)
 
 For local development setup, troubleshooting, and advanced usage, see the dedicated guide:
